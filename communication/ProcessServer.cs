@@ -83,7 +83,7 @@ namespace communication
             var name = Path.GetFileNameWithoutExtension(filepath);
             var route = ImageExtensions.Contains(ext) ? "Image" : "File";
             
-            var webrequest = WebRequest.CreateHttp("http://127.0.0.1:8383/" + route + "/" + name + "/" + ext);
+            var webrequest = WebRequest.CreateHttp(ServerAddress + route + "/" + name + "/" + ext);
             webrequest.Method = "POST";
             var contents = File.ReadAllBytes(filepath);
             using (var request = webrequest.GetRequestStream())
@@ -100,7 +100,7 @@ namespace communication
         }
         public void SendText(string text, Action<byte[]> callBack)
         {
-            var webrequest = WebRequest.CreateHttp("http://127.0.0.1:8383/File/Text/txt");
+            var webrequest = WebRequest.CreateHttp(ServerAddress + "File/Text/txt");
             webrequest.Method = "POST";
             var contents = System.Text.Encoding.UTF8.GetBytes(text);
             using (var request = webrequest.GetRequestStream())
