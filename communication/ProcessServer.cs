@@ -91,7 +91,7 @@ namespace communication
             }
             return responseBuffer.ToArray();
         }
-        public byte[] SendText(string ip, int port, string text, Action<byte[]> callBack)
+        public byte[] SendText(string ip, int port, string text)
         {
             var ServerAddress = "http://" + ip + ":" + port + "/";
             var webrequest = WebRequest.CreateHttp(ServerAddress + "File/Text/txt");
