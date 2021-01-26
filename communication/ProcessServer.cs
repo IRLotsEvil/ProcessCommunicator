@@ -72,53 +72,40 @@ namespace communication
     public class ProcessClient
     {
         private string[] ImageExtensions = new string[] { "jpg", "jpeg", "bmp", "png", "gif" };
-        public string ServerAddress { get; set; }
-        public ProcessClient(string ip, int port)
+        public byte[] SendFile(string ip, int port, string filepath)
         {
-            ServerAddress = "http://" + ip + ":" + port + "/";
-        }
-        public void SendFile(string filepath, Action<byte[]> callBack)
-        {
+            var ServerAddress = "http://" + ip + ":" + port + "/";
             var ext = Path.GetExtension(filepath).TrimStart('.');
             var name = Path.GetFileNameWithoutExtension(filepath);
             var route = ImageExtensions.Contains(ext) ? "Image" : "File";
-            new Task(() =>
+            var webrequest = WebRequest.CreateHttp(ServerAddress + route + "/" + name + "/" + ext);
+            webrequest.Method = "POST";
+            var contents = File.ReadAllBytes(filepath);
+            var responseBuffer = new List<byte>();
+            using (var request = webrequest.GetRequestStream())
             {
-                var webrequest = WebRequest.CreateHttp(ServerAddress + route + "/" + name + "/" + ext);
-                webrequest.Method = "POST";
-                var contents = File.ReadAllBytes(filepath);
-                using (var request = webrequest.GetRequestStream())
-                {
-                    request.Write(contents, 0, contents.Length);
-                    using (var response = webrequest.GetResponse())
-                    using (var r = new StreamReader(response.GetResponseStream()))
-                    {
-                        var buffer = new List<byte>();
-                        while (r.Peek() != -1) buffer.Add((byte)r.Read());
-                        App.Current.Dispatcher.Invoke(() => callBack(buffer.ToArray()));
-                    }
-                }
-            }).Start();
+                request.Write(contents, 0, contents.Length);
+                using (var response = webrequest.GetResponse())
+                using (var r = new StreamReader(response.GetResponseStream()))
+                    while (r.Peek() != -1) responseBuffer.Add((byte)r.Read());
+            }
+            return responseBuffer.ToArray();
         }
-        public void SendText(string text, Action<byte[]> callBack)
+        public byte[] SendText(string ip, int port, string text, Action<byte[]> callBack)
         {
-            new Task(() =>
+            var ServerAddress = "http://" + ip + ":" + port + "/";
+            var webrequest = WebRequest.CreateHttp(ServerAddress + "File/Text/txt");
+            webrequest.Method = "POST";
+            var contents = System.Text.Encoding.UTF8.GetBytes(text);
+            var responseBuffer = new List<byte>();
+            using (var request = webrequest.GetRequestStream())
             {
-                var webrequest = WebRequest.CreateHttp(ServerAddress + "File/Text/txt");
-                webrequest.Method = "POST";
-                var contents = System.Text.Encoding.UTF8.GetBytes(text);
-                using (var request = webrequest.GetRequestStream())
-                {
-                    request.Write(contents, 0, contents.Length);
-                    using (var response = webrequest.GetResponse())
-                    using (var r = new StreamReader(response.GetResponseStream()))
-                    {
-                        var buffer = new List<byte>();
-                        while (r.Peek() != -1) buffer.Add((byte)r.Read());
-                        App.Current.Dispatcher.Invoke(() => callBack(buffer.ToArray()));
-                    }
-                }
-            }).Start();
+                request.Write(contents, 0, contents.Length);
+                using (var response = webrequest.GetResponse())
+                using (var r = new StreamReader(response.GetResponseStream()))
+                    while (r.Peek() != -1) responseBuffer.Add((byte)r.Read());
+            }
+            return responseBuffer.ToArray();
         }
     }
 }
