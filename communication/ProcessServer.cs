@@ -82,38 +82,43 @@ namespace communication
             var ext = Path.GetExtension(filepath).TrimStart('.');
             var name = Path.GetFileNameWithoutExtension(filepath);
             var route = ImageExtensions.Contains(ext) ? "Image" : "File";
-            
-            var webrequest = WebRequest.CreateHttp(ServerAddress + route + "/" + name + "/" + ext);
-            webrequest.Method = "POST";
-            var contents = File.ReadAllBytes(filepath);
-            using (var request = webrequest.GetRequestStream())
+            new Task(() =>
             {
-                request.Write(contents, 0, contents.Length);
-                using (var response = webrequest.GetResponse())
-                using (var r = new StreamReader(response.GetResponseStream()))
+                var webrequest = WebRequest.CreateHttp(ServerAddress + route + "/" + name + "/" + ext);
+                webrequest.Method = "POST";
+                var contents = File.ReadAllBytes(filepath);
+                using (var request = webrequest.GetRequestStream())
                 {
-                    var buffer = new List<byte>();
-                    while (r.Peek() != -1) buffer.Add((byte)r.Read());
-                    App.Current.Dispatcher.Invoke(() =>callBack(buffer.ToArray()));
+                    request.Write(contents, 0, contents.Length);
+                    using (var response = webrequest.GetResponse())
+                    using (var r = new StreamReader(response.GetResponseStream()))
+                    {
+                        var buffer = new List<byte>();
+                        while (r.Peek() != -1) buffer.Add((byte)r.Read());
+                        App.Current.Dispatcher.Invoke(() => callBack(buffer.ToArray()));
+                    }
                 }
-            }
+            }).Start();
         }
         public void SendText(string text, Action<byte[]> callBack)
         {
-            var webrequest = WebRequest.CreateHttp(ServerAddress + "File/Text/txt");
-            webrequest.Method = "POST";
-            var contents = System.Text.Encoding.UTF8.GetBytes(text);
-            using (var request = webrequest.GetRequestStream())
+            new Task(() =>
             {
-                request.Write(contents, 0, contents.Length);
-                using (var response = webrequest.GetResponse())
-                using (var r = new StreamReader(response.GetResponseStream()))
+                var webrequest = WebRequest.CreateHttp(ServerAddress + "File/Text/txt");
+                webrequest.Method = "POST";
+                var contents = System.Text.Encoding.UTF8.GetBytes(text);
+                using (var request = webrequest.GetRequestStream())
                 {
-                    var buffer = new List<byte>();
-                    while (r.Peek() != -1) buffer.Add((byte)r.Read());
-                    App.Current.Dispatcher.Invoke(() => callBack(buffer.ToArray()));
+                    request.Write(contents, 0, contents.Length);
+                    using (var response = webrequest.GetResponse())
+                    using (var r = new StreamReader(response.GetResponseStream()))
+                    {
+                        var buffer = new List<byte>();
+                        while (r.Peek() != -1) buffer.Add((byte)r.Read());
+                        App.Current.Dispatcher.Invoke(() => callBack(buffer.ToArray()));
+                    }
                 }
-            }
+            }).Start();
         }
     }
 }
