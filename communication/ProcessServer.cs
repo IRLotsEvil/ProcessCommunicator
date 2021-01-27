@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Drawing;
 
-    /// <summary>
+    
 namespace communication
 {
+    /// <summary>
     /// A Class that creates and communicates to a simple http server
     /// </summary>
     public class ThinServerClient
