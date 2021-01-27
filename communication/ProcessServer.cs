@@ -54,10 +54,7 @@ namespace communication
             var ext = Path.GetExtension(filepath).TrimStart('.');
             return SendData("http://" + ip + ":" + port + "/" + (ImageExtensions.Contains(ext) ? "Image" : "File") + "/" + Path.GetFileNameWithoutExtension(filepath) + "/" + ext, File.ReadAllBytes(filepath));
         }
-        static public byte[] SendText(string ip, int port, string text)
-        {
-            return SendData("http://" + ip + ":" + port + "/File/Text/txt", System.Text.Encoding.UTF8.GetBytes(text));
-        }
+        static public byte[] SendText(string ip, int port, string text) => SendData("http://" + ip + ":" + port + "/File/Text/txt", System.Text.Encoding.UTF8.GetBytes(text));
         static private byte[] SendData(string address, byte[] contents)
         {
             var webrequest = WebRequest.CreateHttp(address);
@@ -72,6 +69,10 @@ namespace communication
             }
             return responseBuffer.ToArray();
         }
+
+        static public Task<byte[]> SendFileAsync(string ip, int port, string filepath)=>new Task<byte[]>(()=>SendFile(ip,port,filepath));
+        static public Task<byte[]> SendTextAsync(string ip, int port, string text)=>new Task<byte[]>(()=>SendText(ip,port,text));
+        
         public virtual event EventHandler<SentFileArgs> ImageSent;
         public virtual event EventHandler<SentFileArgs> FileSent;
         public class SentFileArgs : EventArgs
