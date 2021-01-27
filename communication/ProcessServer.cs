@@ -32,7 +32,8 @@ namespace communication
                         if (routes[0] == "Image")
                         {
                             var img = System.Drawing.Image.FromStream(request.InputStream);
-                            App.Current.Dispatcher.Invoke(() => ImageSent?.Invoke(this, new SentFileArgs(context.Response,img)));
+                            var args = new SentFileArgs(context.Response, img);
+                            if (ImageSent != null) App.Current.Dispatcher.Invoke(() => ImageSent(this, args));else args.RespondString();
                         }
                         else if (routes[0] == "File")
                         {
@@ -40,7 +41,8 @@ namespace communication
                             using (var reader = new StreamReader(request.InputStream))
                             {
                                 while (reader.Peek() != -1) buffered.Add((byte)reader.Read());
-                                App.Current.Dispatcher.Invoke(() => FileSent?.Invoke(this, new SentFileArgs(context.Response, buffered.ToArray())));
+                                var args = new SentFileArgs(context.Response, buffered.ToArray());
+                                if (FileSent != null) App.Current.Dispatcher.Invoke(() => FileSent(this, args)); else args.RespondString();
                             }
                         }
                     }
