@@ -25,7 +25,7 @@ namespace communication
         public MainWindow()
         {
             InitializeComponent();
-            var PS = new ProcessServer("127.0.0.1", 8383);
+            var PS = new ThinServerClient("127.0.0.1", 8383);
             PS.ImageSent += (sender, e)=> 
             {
                 e.Image.Save("File_lol.jpg");
