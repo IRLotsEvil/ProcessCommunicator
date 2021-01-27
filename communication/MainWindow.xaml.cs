@@ -22,19 +22,29 @@ namespace communication
     /// </summary>
     public partial class MainWindow : Window
     {
+        ThinServerClient ths = new ThinServerClient("127.0.0.1", 8383);
         public MainWindow()
         {
             InitializeComponent();
-            var PS = new ThinServerClient("127.0.0.1", 8383);
-            PS.ImageSent += (sender, e)=> 
+            ths.ImageSent += (sender, e)=> 
             {
                 e.Image.Save("File_lol.jpg");
                 e.RespondString("This is a response string");
             };
-            PS.FileSent += (sender, e)=> 
+            ths.FileSent += (sender, e)=> 
             {
                 
             };
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            ths.Stop();
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            ths.Start();
         }
     }
 }
