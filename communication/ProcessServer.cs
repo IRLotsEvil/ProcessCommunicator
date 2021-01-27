@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Drawing;
 
 namespace communication
 {
@@ -31,7 +31,7 @@ namespace communication
                         var file = routes[1] + "." + routes[2];
                         if (routes[0] == "Image")
                         {
-                            var img = System.Drawing.Image.FromStream(request.InputStream);
+                            var img = Image.FromStream(request.InputStream);
                             var args = new SentFileArgs(context.Response, img);
                             if (ImageSent != null) App.Current.Dispatcher.Invoke(() => ImageSent(this, args));else args.RespondString();
                         }
@@ -81,7 +81,7 @@ namespace communication
         {
             private HttpListenerResponse Response { get; set; }
             public byte[] FileBuffer { get; set; }
-            public System.Drawing.Image Image { get; set; }
+            public Image Image { get; set; }
             public SentFileArgs(HttpListenerResponse response) => Response = response;
             public SentFileArgs(HttpListenerResponse response, byte[] buffer) : this(response) => FileBuffer = buffer;
             public SentFileArgs(HttpListenerResponse response, System.Drawing.Image image) : this(response) => Image = image;
