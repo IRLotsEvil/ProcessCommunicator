@@ -5,8 +5,10 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Drawing;
+using System.Runtime.Serialization;
+using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 
-    
 namespace communication
 {
     /// <summary>
@@ -21,7 +23,7 @@ namespace communication
         /// </summary>
         /// <param name="ip"></param>
         /// <param name="port"></param>
-        public ThinServerClient(string ip, int port) => Start();
+        public ThinServerClient(string ip, int port) => Start(ip, port);
         /// <summary>
         /// Starts the Server and listens for incoming requests
         /// </summary>
@@ -42,13 +44,12 @@ namespace communication
                         var context = Listener.EndGetContext(result);
                         var request = context.Request;
                         var routes = request.RawUrl.TrimStart('/').Split("/");
-                        if (routes.Length > 0)
-                        {
-                            var file = routes[1] + "." + routes[2];
+                        if (routes.Length > 0) 
+                        { 
                             if (routes[0] == "Image")
                             {
                                 var img = Image.FromStream(request.InputStream);
-                                var args = new SentFileArgs(context.Response, img) { OriginalFileName = file };
+                                var args = new SentFileArgs(context.Response, img) { OriginalFileName = routes[1] + "." + routes[2] };
                                 if (ImageSent != null) App.Current.Dispatcher.Invoke(() => ImageSent(this, args)); else args.RespondString();
                             }
                             else if (routes[0] == "File")
@@ -57,9 +58,13 @@ namespace communication
                                 using (var reader = new StreamReader(request.InputStream))
                                 {
                                     while (reader.Peek() != -1) buffered.Add((byte)reader.Read());
-                                    var args = new SentFileArgs(context.Response, buffered.ToArray()) { OriginalFileName = file };
+                                    var args = new SentFileArgs(context.Response, buffered.ToArray()) { OriginalFileName = routes[1] + "." + routes[2] };
                                     if (FileSent != null) App.Current.Dispatcher.Invoke(() => FileSent(this, args)); else args.RespondString();
                                 }
+                            }else if(routes[0] == "Serialized")
+                            {
+                                var args = new SentSerialized(context.Response,routes[1], new BinaryFormatter().Deserialize(request.InputStream));
+                                if (SerilizedSent != null)App.Current.Dispatcher.Invoke(() => SerilizedSent(this, args));
                             }
                         }
                         Listener.BeginGetContext(Result, Listener);
@@ -109,18 +114,46 @@ namespace communication
         /// <returns></returns>
         static public byte[] SendData(string address, byte[] contents)
         {
+            var responseBuffer = new List<byte>();
+            using (var r = new StreamReader(GetStream(address, contents)))
+                while (r.Peek() != -1) responseBuffer.Add((byte)r.Read());
+            return responseBuffer.ToArray();
+        }
+        /// <summary>
+        /// Serializes then sends an object to the server
+        /// </summary>
+        /// <typeparam name="T">Type to return</typeparam>
+        /// <param name="target">Object to serialize</param>
+        /// <param name="ip">Server IP</param>
+        /// <param name="port">Port</param>
+        /// <returns></returns>
+        static public T SendObject<T>(object target, string ip = "127.0.0.1", int port = 8383)
+        {
+            var rtype = typeof(T);
+            var ttype = target.GetType();
+            if (!rtype.IsSerializable)
+                throw new SerializationException("Return type can't be serialised");
+            if (!ttype.IsSerializable)
+                throw new SerializationException("Target type can't be serialised");
+            var bf = new BinaryFormatter();
+            using var mstream = new MemoryStream();
+            bf.Serialize(mstream, target);
+            return (T)bf.Deserialize(GetStream("http://" + ip + ":" + port + "/Serialized/" + ttype.FullName, mstream.ToArray()));
+        }
+
+        static private Stream GetStream(string address, byte[] contents)
+        {
             var webrequest = WebRequest.CreateHttp(address);
             webrequest.Method = "POST";
-            var responseBuffer = new List<byte>();
             using (var request = webrequest.GetRequestStream())
             {
                 request.Write(contents, 0, contents.Length);
-                using (var response = webrequest.GetResponse())
-                using (var r = new StreamReader(response.GetResponseStream()))
-                    while (r.Peek() != -1) responseBuffer.Add((byte)r.Read());
+                return webrequest.GetResponse().GetResponseStream();
             }
-            return responseBuffer.ToArray();
         }
+
+        
+ 
         /// <summary>
         /// Asynchronous version of the SendFile method which sends a file to an active ThinServerClient
         /// </summary>
@@ -145,6 +178,7 @@ namespace communication
         /// An event that fires when any file or request has been sent to the server, to end the request you must Invoke the response method in the event args
         /// </summary>
         public virtual event EventHandler<SentFileArgs> FileSent;
+        public virtual event EventHandler<SentSerialized> SerilizedSent;
         public class SentFileArgs : EventArgs
         {
             private HttpListenerResponse Response { get; set; }
@@ -170,6 +204,35 @@ namespace communication
             /// </summary>
             /// <param name="value">The text to be sent</param>
             public void RespondString(string value = "") => Respond(System.Text.Encoding.UTF8.GetBytes(value));
+        }
+        public class SentSerialized : EventArgs
+        {
+            private HttpListenerResponse Response { get; set; }
+            public object DeserializedObject{ get; set; }
+            public string FullTypeName { get; set; }
+            public SentSerialized(HttpListenerResponse response, string name, object deserialized)
+            {
+                FullTypeName = name;
+                DeserializedObject = deserialized;
+                Response = response;
+            }
+            /// <summary>
+            /// Responds to a serialized request
+            /// </summary>
+            /// <param name="target">The object to serialize</param>
+            public void RespondSerialized(object target) 
+            {
+                var ttype = target.GetType();
+                if (!ttype.IsSerializable)
+                    throw new SerializationException("Target type can't be serialised");
+                using var mstream = new MemoryStream();
+                new BinaryFormatter().Serialize(mstream, target);
+                var buffer = mstream.ToArray();
+                Response.ContentLength64 = buffer.Length;
+                var output = Response.OutputStream;
+                output.Write(buffer, 0, buffer.Length);
+                output.Close();
+            }
         }
     }
 }

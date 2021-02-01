@@ -35,6 +35,11 @@ namespace communication
             {
                 
             };
+            ths.SerilizedSent += (sender, e) =>
+            {
+                e.RespondSerialized("Hello");
+            };
+            
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
