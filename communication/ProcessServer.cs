@@ -7,14 +7,33 @@ using System.Linq;
 using System.Drawing;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace communication
 {
+    public enum ThinServerStatus { Active, Inactive }
     /// <summary>
     /// A Class that creates and communicates to a simple http server
     /// </summary>
-    public class ThinServerClient
+    public class ThinServerClient : INotifyPropertyChanged
     {
+        private ThinServerStatus _Status = ThinServerStatus.Inactive;
+        public ThinServerStatus Status 
+        { 
+            get => _Status; 
+            set 
+            {
+                if(_Status != value)
+                {
+                    var oldstatus = _Status;
+                    _Status = value;
+                    StatusChanged?.Invoke(this,new StatusChangedArgs(oldstatus,value));
+                    OnPropertyChanged();
+                }
+            } 
+        }
+
         private HttpListener Listener;
         public ThinServerClient() { }
         /// <summary>
@@ -35,6 +54,7 @@ namespace communication
                 Listener = new HttpListener();
                 Listener.Prefixes.Add("http://" + ip + ":" + port + "/");
                 Listener.Start();
+                Status = ThinServerStatus.Active;
                 void Result(IAsyncResult result)
                 {
                     var listener = (HttpListener)result.AsyncState;
@@ -67,7 +87,11 @@ namespace communication
                         }
                         Listener.BeginGetContext(Result, Listener);
                     }
-                    catch (ObjectDisposedException) { Listener = null; }
+                    catch (ObjectDisposedException) 
+                    { 
+                        Listener = null;
+                        Status = ThinServerStatus.Inactive;
+                    }
                 }
                 Listener.BeginGetContext(Result, Listener);
             }
@@ -147,7 +171,7 @@ namespace communication
             return webrequest.GetResponse().GetResponseStream();
         }
 
-        
+        private void OnPropertyChanged([CallerMemberName] string name = "") =>PropertyChanged?.Invoke(this,new PropertyChangedEventArgs(name));
  
         /// <summary>
         /// Asynchronous version of the SendFile method which sends a file to an active ThinServerClient
@@ -177,15 +201,32 @@ namespace communication
         /// <summary>
         /// An event that fires when an image file has been sent to the server, to end the request you must Invoke the response method in the event args
         /// </summary>
-        public virtual event EventHandler<SentFileArgs> ImageSent;
+        public event EventHandler<SentFileArgs> ImageSent;
         /// <summary>
         /// An event that fires when any file or request has been sent to the server, to end the request you must Invoke the response method in the event args
         /// </summary>
-        public virtual event EventHandler<SentFileArgs> FileSent;
+        public event EventHandler<SentFileArgs> FileSent;
         /// <summary>
         /// An event that fires when a serialized object is sent to the server
         /// </summary>
-        public virtual event EventHandler<SentSerializedArgs> SerializedSent;
+        public event EventHandler<SentSerializedArgs> SerializedSent;
+        /// <summary>
+        /// An event that fires when the ThinServerClient status changes
+        /// </summary>
+        public event EventHandler<StatusChangedArgs> StatusChanged;
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public class StatusChangedArgs : EventArgs
+        {
+            public ThinServerStatus NewStatus { get; set; }
+            public ThinServerStatus OldStatus { get; set; }
+            public StatusChangedArgs(ThinServerStatus newstatus , ThinServerStatus oldstatus)
+            {
+                NewStatus = newstatus;
+                OldStatus = oldstatus;
+            }
+        }
+
         public class SentFileArgs : EventArgs
         {
             private HttpListenerResponse Response { get; set; }

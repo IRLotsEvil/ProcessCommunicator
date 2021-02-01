@@ -6,9 +6,12 @@
         xmlns:local="clr-namespace:communication"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Button Content="Stop" HorizontalAlignment="Left" Margin="124,10,0,0" VerticalAlignment="Top" Height="37" Width="111" Click="Button_Click"/>
+    <Grid DataContext="{Binding THS, RelativeSource={RelativeSource AncestorType=local:MainWindow}}">
+        <Button Content="Stop" HorizontalAlignment="Left" Margin="10,52,0,0" VerticalAlignment="Top" Height="37" Width="109" Click="Button_Click"/>
         <Button Content="Start" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="37" Width="109" Click="Button_Click_1"/>
-
+        <Button Content="Send File" HorizontalAlignment="Left" Margin="10,109,0,0" VerticalAlignment="Top" Height="26" Width="109" Click="Button_Click_2"/>
+        <Label Content="{Binding Status}" HorizontalAlignment="Left" Margin="171,16,0,0" VerticalAlignment="Top" Height="26" Width="143"/>
+        <Label Content="Status" HorizontalAlignment="Left" Margin="124,16,0,0" VerticalAlignment="Top"/>
+        <Label Content="Return Message" HorizontalAlignment="Left" Margin="124,109,0,0" VerticalAlignment="Top" Width="165" x:Name="returnmessage"/>
     </Grid>
 </Window>

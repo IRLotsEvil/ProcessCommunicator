@@ -14,6 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Net;
 using System.IO;
+using Microsoft.Win32;
 
 namespace communication
 {
@@ -22,30 +23,43 @@ namespace communication
     /// </summary>
     public partial class MainWindow : Window
     {
-        ThinServerClient ths = new ThinServerClient("127.0.0.1", 8383);
+        public ThinServerClient THS { get; set; } = new ThinServerClient();
         public MainWindow()
         {
             InitializeComponent();
-            ths.ImageSent += (sender, e)=> 
+            THS.ImageSent += (sender, e)=> 
             {
                 e.Image.Save("File_lol.jpg");
                 e.RespondString("This is a response string");
             };
-            ths.FileSent += (sender, e) => 
-            {
-                
-            };
+            DataContext = this;
             
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            ths.Stop();
+            THS.Stop();
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            ths.Start();
+            THS.Start();
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            var shw = new OpenFileDialog();
+            shw.ShowDialog();
+            var tsk = ThinServerClient.SendFileAsync(shw.FileName);
+            tsk.ContinueWith(x =>
+            {
+                var s = Encoding.Default.GetString(x.Result);
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    returnmessage.Content = s;
+                });
+            });
+            tsk.Start();
         }
     }
 }
