@@ -187,6 +187,9 @@ namespace communication
         /// An event that fires when any file or request has been sent to the server, to end the request you must Invoke the response method in the event args
         /// </summary>
         public virtual event EventHandler<SentFileArgs> FileSent;
+        /// <summary>
+        /// An event that fires when a serialized object is sent to the server
+        /// </summary>
         public virtual event EventHandler<SentSerialized> SerilizedSent;
         public class SentFileArgs : EventArgs
         {

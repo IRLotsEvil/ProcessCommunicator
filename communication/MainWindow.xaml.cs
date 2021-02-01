@@ -31,7 +31,7 @@ namespace communication
                 e.Image.Save("File_lol.jpg");
                 e.RespondString("This is a response string");
             };
-            ths.FileSent += (sender, e)=> 
+            ths.FileSent += (sender, e) => 
             {
                 
             };
