@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Drawing;
 using System.Runtime.Serialization;
-using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 
 namespace communication
@@ -55,16 +54,15 @@ namespace communication
                             else if (routes[0] == "File")
                             {
                                 var buffered = new List<byte>();
-                                using (var reader = new StreamReader(request.InputStream))
-                                {
-                                    while (reader.Peek() != -1) buffered.Add((byte)reader.Read());
-                                    var args = new SentFileArgs(context.Response, buffered.ToArray()) { OriginalFileName = routes[1] + "." + routes[2] };
-                                    if (FileSent != null) App.Current.Dispatcher.Invoke(() => FileSent(this, args)); else args.RespondString();
-                                }
-                            }else if(routes[0] == "Serialized")
+                                using var reader = new StreamReader(request.InputStream);
+                                while (reader.Peek() != -1) buffered.Add((byte)reader.Read());
+                                var args = new SentFileArgs(context.Response, buffered.ToArray()) { OriginalFileName = routes[1] + "." + routes[2] };
+                                if (FileSent != null) App.Current.Dispatcher.Invoke(() => FileSent(this, args)); else args.RespondString();
+                            }
+                            else if(routes[0] == "Serialized")
                             {
-                                var args = new SentSerialized(context.Response,routes[1], new BinaryFormatter().Deserialize(request.InputStream));
-                                if (SerilizedSent != null)App.Current.Dispatcher.Invoke(() => SerilizedSent(this, args));
+                                var args = new SentSerializedArgs(context.Response,routes[1], new BinaryFormatter().Deserialize(request.InputStream));
+                                if (SerializedSent != null)App.Current.Dispatcher.Invoke(() => SerializedSent(this, args));
                             }
                         }
                         Listener.BeginGetContext(Result, Listener);
@@ -105,7 +103,6 @@ namespace communication
         /// <param name="text">Text to Send</param>
         /// <returns>The response is returned as a byte array buffer</returns>
         static public byte[] SendText(string text, string ip = "127.0.0.1", int port = 8383) => SendData("http://" + ip + ":" + port + "/File/Text/txt", System.Text.Encoding.UTF8.GetBytes(text));
-
         /// <summary>
         /// Send a buffer of data to an active ThinServerClient
         /// </summary>
@@ -145,11 +142,9 @@ namespace communication
         {
             var webrequest = WebRequest.CreateHttp(address);
             webrequest.Method = "POST";
-            using (var request = webrequest.GetRequestStream())
-            {
-                request.Write(contents, 0, contents.Length);
-                return webrequest.GetResponse().GetResponseStream();
-            }
+            using var request = webrequest.GetRequestStream();
+            request.Write(contents, 0, contents.Length);
+            return webrequest.GetResponse().GetResponseStream();
         }
 
         
@@ -190,7 +185,7 @@ namespace communication
         /// <summary>
         /// An event that fires when a serialized object is sent to the server
         /// </summary>
-        public virtual event EventHandler<SentSerialized> SerilizedSent;
+        public virtual event EventHandler<SentSerializedArgs> SerializedSent;
         public class SentFileArgs : EventArgs
         {
             private HttpListenerResponse Response { get; set; }
@@ -217,12 +212,12 @@ namespace communication
             /// <param name="value">The text to be sent</param>
             public void RespondString(string value = "") => Respond(System.Text.Encoding.UTF8.GetBytes(value));
         }
-        public class SentSerialized : EventArgs
+        public class SentSerializedArgs : EventArgs
         {
             private HttpListenerResponse Response { get; set; }
             public object DeserializedObject{ get; set; }
             public string FullTypeName { get; set; }
-            public SentSerialized(HttpListenerResponse response, string name, object deserialized)
+            public SentSerializedArgs(HttpListenerResponse response, string name, object deserialized)
             {
                 FullTypeName = name;
                 DeserializedObject = deserialized;

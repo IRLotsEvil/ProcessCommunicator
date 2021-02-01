@@ -35,10 +35,6 @@ namespace communication
             {
                 
             };
-            ths.SerilizedSent += (sender, e) =>
-            {
-                e.RespondSerialized("Hello");
-            };
             
         }
 
