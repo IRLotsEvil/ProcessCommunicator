@@ -126,7 +126,7 @@ namespace communication
         /// <param name="target">Object to serialize</param>
         /// <param name="ip">Server IP</param>
         /// <param name="port">Port</param>
-        /// <returns></returns>
+        /// <returns>The deserialized object cast to the appropriate type</returns>
         static public T SendObject<T>(object target, string ip = "127.0.0.1", int port = 8383)
         {
             var rtype = typeof(T);
@@ -170,6 +170,15 @@ namespace communication
         /// <param name="text">Text to Send</param>
         /// <returns>A Task to execute asynchronously</returns>
         static public Task<byte[]> SendTextAsync(string text, string ip = "127.0.0.1", int port = 8383) =>new Task<byte[]>(()=>SendText(text, ip, port));
+        /// <summary>
+        /// Asynchonous version of the SendObject method which sends a serialized object to an active ThinServerClient
+        /// </summary>
+        /// <typeparam name="T">Type to return</typeparam>
+        /// <param name="target">Object to serialize</param>
+        /// <param name="ip">Server IP</param>
+        /// <param name="port">Port</param>
+        /// <returns>The deserialized object cast to the appropriate type</returns>
+        static public Task<T> SendObjectAsync<T>(object target, string ip = "127.0.0.1", int port = 8383) => new Task<T>(() => SendObject<T>(target, ip, port));
         /// <summary>
         /// An event that fires when an image file has been sent to the server, to end the request you must Invoke the response method in the event args
         /// </summary>
