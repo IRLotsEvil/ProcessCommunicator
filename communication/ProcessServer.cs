@@ -75,7 +75,7 @@ namespace communication
                             {
                                 var buffered = new List<byte>();
                                 using var reader = new StreamReader(request.InputStream);
-                                while (reader.Peek() != -1) buffered.Add((byte)reader.Read());
+                                while (!reader.EndOfStream) buffered.Add((byte)reader.Read());
                                 var args = new SentFileArgs(context.Response, buffered.ToArray()) { OriginalFileName = routes[1] + "." + routes[2] };
                                 if (FileSent != null) App.Current.Dispatcher.Invoke(() => FileSent(this, args)); else args.RespondString();
                             }
@@ -137,7 +137,7 @@ namespace communication
         {
             var responseBuffer = new List<byte>();
             using (var r = new StreamReader(GetStream(address, contents)))
-                while (r.Peek() != -1) responseBuffer.Add((byte)r.Read());
+                while (!r.EndOfStream) responseBuffer.Add((byte)r.Read());
             return responseBuffer.ToArray();
         }
         /// <summary>
@@ -166,6 +166,7 @@ namespace communication
         {
             var webrequest = WebRequest.CreateHttp(address);
             webrequest.Method = "POST";
+            webrequest.ServicePoint.ReceiveBufferSize = Int32.MaxValue;
             using var request = webrequest.GetRequestStream();
             request.Write(contents, 0, contents.Length);
             return webrequest.GetResponse().GetResponseStream();
@@ -246,6 +247,7 @@ namespace communication
                 var output = Response.OutputStream;
                 output.Write(buffer, 0, buffer.Length);
                 output.Close();
+                Response.Close();
             }
             /// <summary>
             /// Sends a string reponse back to the Client encoded in UTF8

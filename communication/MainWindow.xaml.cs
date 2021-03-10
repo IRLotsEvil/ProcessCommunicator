@@ -33,7 +33,11 @@ namespace communication
                 e.RespondString("This is a response string");
             };
             DataContext = this;
-            
+            THS.SerializedSent += (sender ,e) => 
+            {
+                var de = e.DeserializedObject;
+            };
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -51,6 +55,7 @@ namespace communication
             var shw = new OpenFileDialog();
             shw.ShowDialog();
             var tsk = ThinServerClient.SendFileAsync(shw.FileName);
+            
             tsk.ContinueWith(x =>
             {
                 var s = Encoding.Default.GetString(x.Result);
